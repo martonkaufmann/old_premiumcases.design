@@ -1,0 +1,19 @@
+type Surface{
+	printifyID: String!
+	name: String!
+	price: Int!
+	image: String!
+    case: Case!
+}
+
+type Case{
+	printifyID: String!
+	name: String!
+	surfaces: [Surface!]! @relation
+    device: Device!
+}
+
+type Device{
+	name: String!
+	cases: [Case!]! @relation
+}
