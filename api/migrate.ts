@@ -1,5 +1,7 @@
 import { NowRequest, NowResponse } from '@now/node';
 import axios from 'axios';
+import dotenv from 'dotenv';
+import cloudinary from 'cloudinary';
 
 interface ResponseImages {
     src: string;
@@ -14,6 +16,11 @@ interface ResponseVariants {
     is_enabled: boolean;
 }
 
+interface ResponseMetadata {
+    case: string;
+    image: string;
+}
+
 interface Response {
     id: string;
     title: string;
@@ -23,136 +30,256 @@ interface Response {
 }
 
 interface Surface {
-    id: string;
+    _id: string;
     name: string;
-    price: number;
-    image: string;
 }
 
 interface Case {
+    _id: string;
     name: string;
-    surfaces: Surface[];
 }
 
 interface Device {
+    _id: string;
     name: string;
-    cases: Case[];
+}
+
+interface Variant {
+    price: number;
+    image: string;
+    printifyId: string;
+    case: Case;
+    surface: Surface;
+    device: Device;
 }
 
 interface Product {
-    id: string;
     name: string;
+    image: string;
     devices: Device[];
+    cases: Case[];
+    surfaces: Surface[];
+    variants: Variant[];
 }
 
-const createSurfaceIfNotExists = (
-    products: Product[],
-    pId: number,
-    dId: number,
-    cId: number,
-    { id, name, price, image },
-) => {
-    let index = products[pId].devices[dId].cases[cId].surfaces.findIndex(s => s.name === name);
-    if (index === -1) {
-        products[pId].devices[dId].cases[cId].surfaces.push({
-            id,
-            name,
-            price,
-            image,
-        });
+const dataQuery = `
+    query {
+        allDevices {
+            data {
+                _id
+                name
+            }
+        }
+        allCases {
+            data {
+                _id
+                name
+            }
+        }
+        allSurfaces {
+            data {
+                _id
+                name
+            }
+        }
     }
+`;
 
-    return index;
-};
-
-const findOrCreateCase = (products: Product[], pId: number, dId: number, { name }): number => {
-    let index = products[pId].devices[dId].cases.findIndex(c => c.name === name);
-
-    if (index === -1) {
-        index =
-            products[pId].devices[dId].cases.push({
-                name,
-                surfaces: [],
-            }) - 1;
-    }
-
-    return index;
-};
-
-const findOrCreateDevice = (products: Product[], pId: number, { name }): number => {
-    let index = products[pId].devices.findIndex(d => d.name === name);
-
-    if (index === -1) {
-        index =
-            products[pId].devices.push({
-                name,
-                cases: [],
-            }) - 1;
-    }
-
-    return index;
-};
-
-const findOrCreateProduct = (product: Product[], { id, name }): number => {
-    let index = product.findIndex(p => p.name === name);
-
-    if (index === -1) {
-        index = product.push({ id, name, devices: [] }) - 1;
-    }
-
-    return index;
-};
-
-const findSurfaceImage = (images: ResponseImages[], variantId: number): string =>
-    images.find(image => image.variant_ids.includes(variantId) && image.is_default).src;
+const buildGraphQLCreateMutation = (products: Product[]): string => `mutation {
+    ${products.map(
+        (product, index) => `q_${index}: createProduct(
+            data: {
+                name: "${product.name}"
+                image: "${product.image}"
+                devices: {
+                    create: [
+                        ${product.devices.map(
+                            device => `{
+                            name: "${device.name}"
+                            cases: {
+                                create: [
+                                    ${device.cases.map(
+                                        c => `{
+                                        name: "${c.name}"
+                                        printifyID: "${c.id}"
+                                        surfaces: {
+                                            create: [
+                                                ${c.surfaces.map(
+                                                    surface => `{
+                                                    printifyID: "${surface.id}"
+                                                    name: "${surface.name}"
+                                                    price: ${surface.price}
+                                                    image: "${surface.image}"
+                                                }`,
+                                                )}
+                                            ]
+                                        }
+                                    }`,
+                                    )}
+                                ]
+                            }
+                        }`,
+                        )}
+                    ]
+                }
+            }
+        ) {
+            _id
+            name
+            devices {
+                data {
+                    _id
+                    name
+                    cases {
+                        data {
+                            _id
+                            name
+                            printifyID
+                            surfaces {
+                                data {
+                                    _id
+                                    printifyID
+                                    name
+                                    price
+                                    image
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    `,
+    )}
+}`;
 
 export default async (request: NowRequest, response: NowResponse) => {
-    const printifyResponse = await axios.get('https://api.printify.com/v1/shops/1686917/products.json?limit=100', {
-        headers: {
-            Authorization:
-                'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImI2MWIyZTM1MmM4Y2E3MWM4NzAzNjlhOWVjODJkODQyY2NiYTU4YzFjMGM2YTZiMDVmM2JmOGQ4OTA2MmNmNjVjNjNhY2IwMmZlNzk4MWE2In0.eyJhdWQiOiIzN2Q0YmQzMDM1ZmUxMWU5YTgwM2FiN2VlYjNjY2M5NyIsImp0aSI6ImI2MWIyZTM1MmM4Y2E3MWM4NzAzNjlhOWVjODJkODQyY2NiYTU4YzFjMGM2YTZiMDVmM2JmOGQ4OTA2MmNmNjVjNjNhY2IwMmZlNzk4MWE2IiwiaWF0IjoxNTg4NTkzNTM5LCJuYmYiOjE1ODg1OTM1MzksImV4cCI6MTYyMDEyOTUzOSwic3ViIjoiNzEyMDU2NCIsInNjb3BlcyI6WyJzaG9wcy5tYW5hZ2UiLCJzaG9wcy5yZWFkIiwiY2F0YWxvZy5yZWFkIiwib3JkZXJzLnJlYWQiLCJvcmRlcnMud3JpdGUiLCJwcm9kdWN0cy5yZWFkIiwicHJvZHVjdHMud3JpdGUiLCJ3ZWJob29rcy5yZWFkIiwid2ViaG9va3Mud3JpdGUiLCJ1cGxvYWRzLnJlYWQiLCJ1cGxvYWRzLndyaXRlIiwicHJpbnRfcHJvdmlkZXJzLnJlYWQiXX0.AHtPGKhcIKZRSwuOpBK81tqCQNlIS25dc9vIHvrqvmE0IuIpPFclbJYy7IDEtxSxt6cT2V-3IsQ4kSohleA',
-        },
+    dotenv.config();
+
+    cloudinary.v2.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
     });
+
+    const printifyResponse = await axios.get(
+        `https://api.printify.com/v1/shops/${process.env.PRINTIFY_SHOP_ID}/products.json?limit=100`,
+        {
+            headers: {
+                Authorization: `Bearer ${process.env.PRINTIFY_TOKEN}`,
+            },
+        },
+    );
     const printifyResponseData = <Response[]>printifyResponse.data.data;
 
+    const r = await axios.post(
+        'https://graphql.fauna.com/graphql',
+        JSON.stringify({ query: dataQuery }),
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                Authorization: `Bearer ${process.env.FAUNADB_TOKEN}`,
+            },
+        },
+    );
+
+    const cases: Case[] = r.data.data.allCases.data
+    const devices: Device[] = r.data.data.allDevices.data
+    const surfaces: Surface[] = r.data.data.allSurfaces.data
     const products: Product[] = [];
 
     for (const responseData of printifyResponseData) {
-        const productId = responseData.id;
-        let [productName, caseName] = responseData.title.split('/');
-        productName = productName.trim();
-        caseName = caseName.trim();
-
-        let productIndex = findOrCreateProduct(products, { id: productId, name: productName });
+        const variants: Variant[] = []
+        const caseId = responseData.id;
+        const productName = responseData.title.trim();
+        const metadata: ResponseMetadata = JSON.parse(
+            responseData.description.match(/({(.|\n)*})/gm)[0],
+        );
+        const caseName = metadata.case;
 
         for (const variant of responseData.variants) {
             if (!variant.is_enabled) {
                 continue;
             }
 
-            const caseSurfacePrice = variant.price;
-            const caseSurfaceId = variant.id;
-            const caseSurfaceImage = findSurfaceImage(responseData.images, variant.id);
+            const surfacePrice = variant.price;
+            const surfaceId = variant.id;
+            const surfaceImage = responseData.images
+            .find(
+                image => image.variant_ids.includes(surfaceId) && image.is_default,
+            )
+            .src.replace('-api', '');
 
-            let [deviceName, caseSurfaceName] = variant.title.split('/');
+            let [deviceName, surfaceName] = variant.title.split('/');
             deviceName = deviceName.trim();
-            caseSurfaceName = caseSurfaceName !== undefined ? caseSurfaceName.trim() : 'Default';
+            surfaceName =
+                surfaceName !== undefined ? surfaceName.trim() : 'Base';
 
-            let deviceIndex = findOrCreateDevice(products, productIndex, {
-                name: deviceName,
-            });
+                // const cloudinaryImage = await cloudinary.v2.uploader.upload(surfaceImage)
 
-            let caseIndex = findOrCreateCase(products, productIndex, deviceIndex, { name: caseName });
+                variants.push({
+                    price: surfacePrice,
+                    // image: cloudinaryImage.public_id,
+                    image: 'image',
+                    printifyId: `${caseId}-${surfaceId}`,
+                    case: cases.find(c => c.name === caseName),
+                    device: devices.find(d => d.name === deviceName),
+                    surface: surfaces.find(s => s.name === surfaceName),
+                })
+        }
 
-            createSurfaceIfNotExists(products, productIndex, deviceIndex, caseIndex, {
-                id: caseSurfaceId,
-                name: caseSurfaceName,
-                price: caseSurfacePrice,
-                image: caseSurfaceImage
-                // image: `${deviceId}-${caseSurfaceId}.jpg`,
-            });
+        let productIndex = products.findIndex(p => p.name === productName);
+
+        if (productIndex === -1) {
+            const productImage = metadata.image;
+            // const cloudinaryImage = await cloudinary.v2.uploader.upload(productImage)
+
+            products.push({
+                name: productName,
+                image: 'image',
+                // image: cloudinaryImage.public_id,
+                variants: variants,
+                cases: [],
+                surfaces: [],
+                devices: []
+            })
+        } else {
+            products[productIndex].variants = [
+                ...products[productIndex].variants,
+                ...variants,
+            ]
         }
     }
 
-    response.status(200).send({products});
+    products.forEach((product, index) => (
+        product.variants.map(variant => {
+            if (!products[index].cases.some(c => c._id === variant.case._id)) {
+                products[index].cases.push(variant.case)
+            }
+
+            if (!products[index].devices.some(d => d._id === variant.device._id)) {
+                products[index].devices.push(variant.device)
+            }
+
+            if (!products[index].surfaces.some(s => s._id === variant.surface._id)) {
+                products[index].surfaces.push(variant.surface)
+            }
+        })
+    ))
+
+    const faunaResponse = await axios.post(
+        'https://graphql.fauna.com/graphql',
+        JSON.stringify({ query: buildGraphQLCreateMutation(products) }),
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                Authorization: `Bearer ${process.env.FAUNADB_TOKEN}`,
+            },
+        },
+    );
+
+    // response.status(200).send(products);
+    response.status(200).send(faunaResponse);
 };

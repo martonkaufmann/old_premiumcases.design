@@ -1,19 +1,67 @@
-type Surface{
-	printifyID: String!
+type Surface {
 	name: String!
+	products: [Product!] @relation
+}
+
+type Case {
+	name: String!
+	products: [Product!] @relation
+}
+
+type Device {
+	name: String!
+	products: [Product!] @relation
+}
+
+type Variation {
 	price: Int!
 	image: String!
-    case: Case!
+	printifyId: String!
+	device: Device!
+	case: Case!
+	surface: Surface!
+	product: Product!
 }
 
-type Case{
-	printifyID: String!
+type Product {
 	name: String!
-	surfaces: [Surface!]! @relation
-    device: Device!
-}
-
-type Device{
-	name: String!
+	image: String!
+	devices: [Device!]! @relation
 	cases: [Case!]! @relation
+	surfaces: [Surface!]! @relation
+	variations: [Variation!]! @relation
 }
+
+type Query {
+	allProducts: [Product!]
+	allDevices: [Device!]
+	allCases: [Case!]
+	allSurfaces: [Surface!]
+}
+
+# input SurfaceInput {
+# 	printifyID: String!
+# 	name: String!
+# 	price: Int!
+# 	image: String!
+# }
+
+# input CaseInput {
+# 	printifyID: String!
+# 	name: String!
+# 	surfaces: [SurfaceInput!]!
+# }
+
+# input DeviceInput {
+# 	name: String!
+# 	cases: [CaseInput!]!
+# }
+
+# input ProductInput {
+# 	name: String!
+# 	devices: [DeviceInput!]!
+# }
+
+# type Mutation {
+	# upsertProducts(products: [ProductInput!]!): [Product!]! @resolver
+# }

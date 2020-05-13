@@ -5,7 +5,8 @@ const Footer = () => {
     return (
         <>
             <section className="bg-red-500">
-                Couldn't find a design matching your style or want a custom made case?
+                Couldn't find a design matching your style or want a custom made
+                case?
                 {/* <form className="w-64">
             <label for="contact-form-message" className="block mb-3">
                 <span className="block">Message</span>
@@ -18,16 +19,16 @@ const Footer = () => {
                 <div className="flex container mx-auto justify-between">
                     <section>PremiumCases.Design</section>
                     <section className="flex">
-                        <Link to="contact-us" className="mr-3 underline">
+                        <Link to="/contact-us" className="mr-3 underline">
                             Contact Us
                         </Link>
-                        <Link to="faq" className="mr-3 underline">
+                        <Link to="/faq" className="mr-3 underline">
                             FAQ
                         </Link>
-                        <Link to="privacy-policy" className="mr-3 underline">
+                        <Link to="/privacy-policy" className="mr-3 underline">
                             Privacy Policy
                         </Link>
-                        <Link to="terms-and-conditions" className="underline">
+                        <Link to="/terms-and-conditions" className="underline">
                             Terms & Conditions
                         </Link>
                     </section>
