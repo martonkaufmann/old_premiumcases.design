@@ -34,9 +34,7 @@ module.exports = {
                 typeName: 'Fauna',
                 fieldName: 'fauna',
                 url: 'https://graphql.fauna.com/graphql',
-                // HTTP headers
                 headers: {
-                    // Learn about environment variables: https://gatsby.dev/env-vars
                     Authorization: `Bearer ${process.env.FAUNADB_TOKEN}`,
                 },
             },

@@ -39,29 +39,3 @@ type Query {
 	allSurfaces: [Surface!]
 }
 
-# input SurfaceInput {
-# 	printifyID: String!
-# 	name: String!
-# 	price: Int!
-# 	image: String!
-# }
-
-# input CaseInput {
-# 	printifyID: String!
-# 	name: String!
-# 	surfaces: [SurfaceInput!]!
-# }
-
-# input DeviceInput {
-# 	name: String!
-# 	cases: [CaseInput!]!
-# }
-
-# input ProductInput {
-# 	name: String!
-# 	devices: [DeviceInput!]!
-# }
-
-# type Mutation {
-	# upsertProducts(products: [ProductInput!]!): [Product!]! @resolver
-# }

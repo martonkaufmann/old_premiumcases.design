@@ -4,7 +4,7 @@
  * See: https://www.gatsbyjs.org/docs/node-apis/
  */
 
-const path = require(`path`);
+const path = require('path');
 
 exports.createPages = async ({ graphql, actions }) => {
     const { createPage } = actions;
@@ -21,15 +21,15 @@ exports.createPages = async ({ graphql, actions }) => {
         }
     `);
 
-    result.data.fauna.allProducts.data.map(({ _id, name }) => {
-        return createPage({
-            path: `/product/${_id}/${name}`,
+    for (const product of result.data.fauna.allProducts.data) {
+        createPage({
+            path: `/case/${product.name}`,
             component: path.resolve(`./src/templates/product.js`),
             context: {
                 // Data passed to context is available
                 // in page queries as GraphQL variables.
-                _id,
+                _id: product._id,
             },
         });
-    });
+    }
 };
