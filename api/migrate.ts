@@ -1,5 +1,6 @@
-import { NowRequest, NowResponse } from '@now/node';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
+import { NowRequest, NowResponse } from '@now/node';
 import {
     getPrintifyProducts,
     PrintifyProductMetadata,
@@ -14,9 +15,15 @@ import {
     FaunaProduct,
     BulkInsertNamedMutations,
 } from './_migrate/fauna';
+import {
+    setupCloudinary,
+    uploadImageFromUrlToCloudinary,
+} from './_helpers/cloudinary';
+import cloudinary from 'cloudinary';
 
 export default async (request: NowRequest, response: NowResponse) => {
     dotenv.config();
+    setupCloudinary();
 
     // Seed data to database
     await Promise.all([
@@ -45,13 +52,18 @@ export default async (request: NowRequest, response: NowResponse) => {
         ]),
     ]);
 
+    // Get products from printify
     const printifyProducts = await getPrintifyProducts();
+    // Get cases, surfaces and devices from fauna
+    // TODO: Save extra queries by assigning the
+    // ids from the seed response
     const [faunaDevices, faunaCases, faunaSurfaces] = await Promise.all([
         getFaunaDevices(),
         getFaunaCases(),
         getFaunaSurfaces(),
     ]);
     const products: FaunaProduct[] = [];
+    const imageUploads: Promise<cloudinary.UploadApiResponse>[] = [];
 
     for (const printifyProduct of printifyProducts) {
         const variations: FaunaProductVariation[] = [];
@@ -68,41 +80,64 @@ export default async (request: NowRequest, response: NowResponse) => {
                 continue;
             }
 
-            const surfacePrice = variant.price;
-            const surfaceId = variant.id;
-            const surfaceImage = printifyProduct.images
+            const variationPrice = variant.price;
+            const variationId = variant.id;
+            const variationImageUrl = printifyProduct.images
                 .find(
                     image =>
-                        image.variant_ids.includes(surfaceId) &&
+                        image.variant_ids.includes(variationId) &&
                         image.is_default,
                 )
                 .src.replace('-api', '');
 
-            let [deviceName, surfaceName] = variant.title.split('/');
+            let [deviceName, variationName] = variant.title.split('/');
             deviceName = deviceName.trim();
-            surfaceName =
-                surfaceName !== undefined ? surfaceName.trim() : 'Base';
+            variationName =
+                variationName !== undefined ? variationName.trim() : 'Base';
+
+            // Upload variation image
+            const variantionImagePublicId = crypto
+                .createHash('md5')
+                .update(variationImageUrl)
+                .digest('hex');
+            imageUploads.push(
+                uploadImageFromUrlToCloudinary(
+                    variationImageUrl,
+                    variantionImagePublicId,
+                ),
+            );
 
             variations.push({
-                price: surfacePrice,
-                image: surfaceImage,
-                printifyId: `${caseId}-${surfaceId}`,
+                price: variationPrice,
+                image: variantionImagePublicId,
+                printifyId: `${caseId}-${variationId}`,
                 case: faunaCases.find(c => c.name === caseName),
                 device: faunaDevices.find(d => d.name === deviceName),
-                surface: faunaSurfaces.find(s => s.name === surfaceName),
+                surface: faunaSurfaces.find(s => s.name === variationName),
             });
         }
 
         let productIndex = products.findIndex(p => p.name === productName);
 
-        // Only add product variantions if product
-        // already exists
+        // Create product with variations or if product
+        // exists add variantions
         if (productIndex === -1) {
-            const productImage = metadata.image;
+            // Upload product image
+            const productImageUrl = metadata.image;
+            const productImagePublicId = crypto
+                .createHash('md5')
+                .update(productImageUrl)
+                .digest('hex');
+            imageUploads.push(
+                uploadImageFromUrlToCloudinary(
+                    productImageUrl,
+                    productImagePublicId,
+                ),
+            );
 
             products.push({
                 name: productName,
-                image: productImage,
+                image: productImagePublicId,
                 variations: variations,
                 cases: [],
                 surfaces: [],
@@ -118,7 +153,7 @@ export default async (request: NowRequest, response: NowResponse) => {
 
     // Add devices, cases and surfaces to product
     products.forEach((product, index) =>
-        product.variations.map(variant => {
+        product.variations.forEach(variant => {
             const isCaseAdded = products[index].cases.some(
                 c => c._id === variant.case._id,
             );
@@ -144,6 +179,7 @@ export default async (request: NowRequest, response: NowResponse) => {
     );
 
     await createFaunaProducts(products);
+    await Promise.all(imageUploads);
 
     response.status(200).send(products);
 };

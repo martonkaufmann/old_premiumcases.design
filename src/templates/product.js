@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { graphql } from 'gatsby';
 import ResponsiveImage from '../components/Images/ResponsiveImage';
 import LoadingButton from '../components/Buttons/Loading';
@@ -10,12 +10,18 @@ const ProductTemplate = ({
         fauna: { findProductByID: product },
     },
 }) => {
+    // console.log(product)
+
+    // return <div>Hi</div>
+
     const [isAddingToCart, setIsAddingToCart] = useState(false);
-    const [selectedDevice, setSelectedDevice] = useState(0);
-    const [selectedCase, setSelectedCase] = useState(0);
-    const [selectedSurface, setSelectedSurface] = useState(0);
+    const [selectedDevice, setSelectedDevice] = useState(null);
+    const [selectedCase, setSelectedCase] = useState(null);
+    const [selectedSurface, setSelectedSurface] = useState(null);
 
     console.log(process.env);
+
+    useEffect(() => {}, []);
 
     const onAddToCartClick = () => {
         setIsAddingToCart(true);
@@ -24,32 +30,32 @@ const ProductTemplate = ({
     };
 
     const onSelectedDeviceChange = event => {
-        const deviceIndex = product.devices.data.findIndex(
-            device => device._id === event.target.value,
-        );
+        // const device = product.devices.data.find(
+        //     device => device._id === event.target.value,
+        // );
 
-        setSelectedDevice(deviceIndex);
-        setSelectedCase(0);
-        setSelectedSurface(0);
+        setSelectedDevice(event.target.value);
+        setSelectedCase(null);
+        setSelectedSurface(null);
     };
 
     const onSelectedCaseChange = event => {
-        const caseIndex = product.devices.data[
-            selectedDevice
-        ].cases.data.findIndex(c => c._id === event.target.value);
+        // const case = product.devices.data[
+        //     selectedDevice
+        // ].cases.data.findIndex(c => c._id === event.target.value);
 
-        setSelectedCase(caseIndex);
-        setSelectedSurface(0);
+        setSelectedCase(event.target.value);
+        setSelectedSurface(null);
     };
 
     const onSelectedSurfaceChange = event => {
-        const surfaceIndex = product.devices.data[selectedDevice].cases.data[
-            selectedCase
-        ].surfaces.data.findIndex(
-            surface => surface._id === event.target.value,
-        );
+        // const surfaceIndex = product.devices.data[selectedDevice].cases.data[
+        //     selectedCase
+        // ].surfaces.data.findIndex(
+        //     surface => surface._id === event.target.value,
+        // );
 
-        setSelectedSurface(surfaceIndex);
+        setSelectedSurface(event.target.value);
     };
 
     return (
@@ -239,25 +245,39 @@ export const query = graphql`
             findProductByID(id: $_id) {
                 _id
                 name
+                image
                 devices {
                     data {
                         _id
-                        name
-                        cases {
-                            data {
-                                _id
-                                name
-                                printifyID
-                                surfaces {
-                                    data {
-                                        _id
-                                        name
-                                        price
-                                        image
-                                        printifyID
-                                    }
-                                }
-                            }
+                    }
+                }
+                cases {
+                    data {
+                        _id
+                    }
+                }
+                surfaces {
+                    data {
+                        _id
+                    }
+                }
+                variations {
+                    data {
+                        _id
+                        image
+                        price
+                        printifyId
+                        device {
+                            _id
+                            name
+                        }
+                        case {
+                            _id
+                            name
+                        }
+                        surface {
+                            _id
+                            name
                         }
                     }
                 }
