@@ -24,6 +24,7 @@ interface PrintifyProductsResponse {
 interface PrintifyProductMetadata {
     case: string;
     image: string;
+    tags: string[];
 }
 
 const getPrintifyProducts = async (): Promise<PrintifyProductsResponse[]> => {

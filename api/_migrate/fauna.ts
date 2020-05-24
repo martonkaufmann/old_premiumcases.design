@@ -27,6 +27,7 @@ interface FaunaProductVariation {
 interface FaunaProduct {
     name: string;
     image: string;
+    tags: string[];
     devices: FaunaDevice[];
     cases: FaunaCase[];
     surfaces: FaunaSurface[];
@@ -122,7 +123,7 @@ const createFaunaProducts = async (products: FaunaProduct[]): Promise<void> => {
     }
     `;
 
-    const response = await makeRequest(`
+    await makeRequest(`
     mutation {
         ${products.map(
             (product, index) => `
@@ -130,6 +131,7 @@ const createFaunaProducts = async (products: FaunaProduct[]): Promise<void> => {
                 data: {
                     name: "${product.name}"
                     image: "${product.image}"
+                    tags: [${product.tags.map(tag => `"${tag}"`).join(',')}]
                     devices: {
                         connect: [
                             ${product.devices.map(device => device._id)}

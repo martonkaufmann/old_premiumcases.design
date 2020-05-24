@@ -124,6 +124,7 @@ export default async (request: NowRequest, response: NowResponse) => {
         if (productIndex === -1) {
             // Upload product image
             const productImageUrl = metadata.image;
+            const productTags = metadata.tags;
             const productImagePublicId = crypto
                 .createHash('md5')
                 .update(productImageUrl)
@@ -138,6 +139,7 @@ export default async (request: NowRequest, response: NowResponse) => {
             products.push({
                 name: productName,
                 image: productImagePublicId,
+                tags: productTags,
                 variations: variations,
                 cases: [],
                 surfaces: [],

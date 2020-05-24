@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { graphql } from 'gatsby';
 import ResponsiveImage from '../components/Images/ResponsiveImage';
 import LoadingButton from '../components/Buttons/Loading';
@@ -10,18 +10,24 @@ const ProductTemplate = ({
         fauna: { findProductByID: product },
     },
 }) => {
-    // console.log(product)
-
-    // return <div>Hi</div>
+    console.log(product);
 
     const [isAddingToCart, setIsAddingToCart] = useState(false);
-    const [selectedDevice, setSelectedDevice] = useState(null);
-    const [selectedCase, setSelectedCase] = useState(null);
-    const [selectedSurface, setSelectedSurface] = useState(null);
-
-    console.log(process.env);
-
-    useEffect(() => {}, []);
+    const [selectedDevice, setSelectedDevice] = useState(
+        product.variations.data[0].device._id,
+    );
+    const [selectedCase, setSelectedCase] = useState(
+        product.variations.data[0].case._id,
+    );
+    const [selectedSurface, setSelectedSurface] = useState(
+        product.variations.data[0].surface._id,
+    );
+    const currentVariation = product.variations.data.find(
+        variation =>
+            variation.device._id === selectedDevice &&
+            variation.surface._id === selectedSurface &&
+            variation.case._id === selectedCase,
+    );
 
     const onAddToCartClick = () => {
         setIsAddingToCart(true);
@@ -30,31 +36,27 @@ const ProductTemplate = ({
     };
 
     const onSelectedDeviceChange = event => {
-        // const device = product.devices.data.find(
-        //     device => device._id === event.target.value,
-        // );
+        const variation = product.variations.data.find(
+            variation => variation.device._id === event.target.value,
+        );
 
         setSelectedDevice(event.target.value);
-        setSelectedCase(null);
-        setSelectedSurface(null);
+        setSelectedCase(variation.case._id);
+        setSelectedSurface(variation.surface._id);
     };
 
     const onSelectedCaseChange = event => {
-        // const case = product.devices.data[
-        //     selectedDevice
-        // ].cases.data.findIndex(c => c._id === event.target.value);
+        const variation = product.variations.data.find(
+            variation =>
+                variation.device._id === selectedDevice &&
+                variation.case._id === event.target.value,
+        );
 
         setSelectedCase(event.target.value);
-        setSelectedSurface(null);
+        setSelectedSurface(variation.surface._id);
     };
 
     const onSelectedSurfaceChange = event => {
-        // const surfaceIndex = product.devices.data[selectedDevice].cases.data[
-        //     selectedCase
-        // ].surfaces.data.findIndex(
-        //     surface => surface._id === event.target.value,
-        // );
-
         setSelectedSurface(event.target.value);
     };
 
@@ -63,13 +65,7 @@ const ProductTemplate = ({
             <SEO title="Page two" />
             <section className="flex md:flex-row flex-col flex-col-reverse justify-between mb-20">
                 <section className="xl:w-4/6 w-full">
-                    <ResponsiveImage
-                        publicId={
-                            product.devices.data[selectedDevice].cases.data[
-                                selectedCase
-                            ].surfaces.data[selectedSurface].image
-                        }
-                    />
+                    <ResponsiveImage publicId={currentVariation.image} />
                     <article className="px-8">
                         <p className="mb-3">
                             Accessorize your phone without sacrificing security
@@ -108,12 +104,7 @@ const ProductTemplate = ({
                             </ol>
                         </section>
                         <span className="text-2xl">
-                            $
-                            {(
-                                product.devices.data[selectedDevice].cases.data[
-                                    selectedCase
-                                ].surfaces.data[selectedSurface].price / 100
-                            ).toFixed(2)}
+                            ${(currentVariation.price / 100).toFixed(2)}
                         </span>
                     </section>
                     <section className="mb-10 md:mb-0 w-full">
@@ -137,13 +128,20 @@ const ProductTemplate = ({
                             className="appearance-none border-2 border-gray-400 rounded w-full px-2 py-2"
                             onChange={onSelectedCaseChange}
                         >
-                            {product.devices.data[
-                                selectedDevice
-                            ].cases.data.map(c => (
-                                <option key={c._id} value={c._id}>
-                                    {c.name}
-                                </option>
-                            ))}
+                            {product.cases.data
+                                .filter(c =>
+                                    product.variations.data.some(
+                                        variation =>
+                                            variation.device._id ===
+                                                selectedDevice &&
+                                            variation.case._id === c._id,
+                                    ),
+                                )
+                                .map(c => (
+                                    <option key={c._id} value={c._id}>
+                                        {c.name}
+                                    </option>
+                                ))}
                         </select>
                         <header className="text-lg mb-2 mt-6 text-gray-600">
                             Surface
@@ -152,13 +150,26 @@ const ProductTemplate = ({
                             className="appearance-none border-2 border-gray-400 rounded w-full px-2 py-2"
                             onChange={onSelectedSurfaceChange}
                         >
-                            {product.devices.data[selectedDevice].cases.data[
-                                selectedCase
-                            ].surfaces.data.map(surface => (
-                                <option key={surface._id} value={surface._id}>
-                                    {surface.name}
-                                </option>
-                            ))}
+                            {product.surfaces.data
+                                .filter(surface =>
+                                    product.variations.data.some(
+                                        variation =>
+                                            variation.device._id ===
+                                                selectedDevice &&
+                                            variation.case._id ===
+                                                selectedCase &&
+                                            variation.surface._id ===
+                                                surface._id,
+                                    ),
+                                )
+                                .map(surface => (
+                                    <option
+                                        key={surface._id}
+                                        value={surface._id}
+                                    >
+                                        {surface.name}
+                                    </option>
+                                ))}
                         </select>
                         {isAddingToCart ? (
                             <LoadingButton className="w-full mt-12 bg-red-500 text-white p-3" />
@@ -175,7 +186,6 @@ const ProductTemplate = ({
             </section>
             <section className="px-8">
                 <header className="text-xl font-bold p-3 mb-12 bg-gray-900 text-white">
-                    {/* Similair designs */}
                     You might also like
                 </header>
                 {/* <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-12">
@@ -227,18 +237,6 @@ const ProductTemplate = ({
     );
 };
 
-// export const query = graphql`
-//   query {
-//     query($slug: String!) {
-//     markdownRemark(fields: { slug: { eq: $slug } }) {
-//       html
-//       frontmatter {
-//         title
-//       }
-//     }
-//   }
-//   }
-// `
 export const query = graphql`
     query($_id: ID!) {
         fauna {
@@ -249,16 +247,19 @@ export const query = graphql`
                 devices {
                     data {
                         _id
+                        name
                     }
                 }
                 cases {
                     data {
                         _id
+                        name
                     }
                 }
                 surfaces {
                     data {
                         _id
+                        name
                     }
                 }
                 variations {
@@ -269,15 +270,12 @@ export const query = graphql`
                         printifyId
                         device {
                             _id
-                            name
                         }
                         case {
                             _id
-                            name
                         }
                         surface {
                             _id
-                            name
                         }
                     }
                 }

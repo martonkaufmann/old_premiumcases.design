@@ -26,6 +26,7 @@ type Variation {
 type Product {
 	name: String!
 	image: String!
+	tags: [String!]!
 	devices: [Device!]! @relation
 	cases: [Case!]! @relation
 	surfaces: [Surface!]! @relation
@@ -37,5 +38,6 @@ type Query {
 	allDevices: [Device!]
 	allCases: [Case!]
 	allSurfaces: [Surface!]
+	findProductsByTags(tags: String!): [Product!]
 }
 

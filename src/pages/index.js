@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { graphql, Link } from 'gatsby';
 import Layout from '../components/Layout';
 import SEO from '../components/SEO';
@@ -37,11 +36,11 @@ const IndexPage = ({
             </header>
             <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 row-gap-12 col-gap-12 sm:col-gap-24 mb-32">
                 {latestProducts.map(product => (
-                    <Link to={`/product/${product._id}/${product.name}`}>
+                    <Link to={`/case/${product.name}`}>
                         <section className="text-left">
                             <DeviceFaceImage
                                 className="mb-3"
-                                publicId="pqrqkoqtbtte69bjjzc6"
+                                publicId={product.image}
                             />
                             <header className="bg-gray-900 font-bold text-white p-3 w-full">
                                 {product.name}
@@ -223,6 +222,7 @@ export const query = graphql`
                 data {
                     _id
                     name
+                    image
                 }
             }
         }
