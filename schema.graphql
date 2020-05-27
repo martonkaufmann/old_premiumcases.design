@@ -5,6 +5,8 @@ type Surface {
 
 type Case {
 	name: String!
+	attributes: [String!]!
+	description: String!
 	products: [Product!] @relation
 }
 

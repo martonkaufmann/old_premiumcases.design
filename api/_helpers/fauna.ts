@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
-const makeRequest = async (query: string): Promise<any> => {
+const makeRequest = async (query: string): Promise<AxiosResponse> => {
     return axios.post(
         'https://graphql.fauna.com/graphql',
         JSON.stringify({ query }),

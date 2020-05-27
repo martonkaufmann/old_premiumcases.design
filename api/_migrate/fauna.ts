@@ -1,4 +1,5 @@
 import { makeRequest } from './../_helpers/fauna';
+import { AxiosResponse } from 'axios';
 
 interface FaunaSurface {
     _id: string;
@@ -33,22 +34,34 @@ interface FaunaProduct {
     surfaces: FaunaSurface[];
     variations: FaunaProductVariation[];
 }
-enum BulkInsertNamedMutations {
+enum BulkInsertMutations {
     device = 'createDevice',
     surface = 'createSurface',
     case = 'createCase',
 }
 
-const bulkInsertNamed = async (
-    mutation: BulkInsertNamedMutations,
-    names: string[],
-): Promise<any> => {
+const bulkInsert = async (
+    mutation: BulkInsertMutations,
+    bulkProperties: object[],
+): Promise<AxiosResponse> => {
     const query = `
         mutation {
-            ${names.map(
-                (name, index) => `
+            ${bulkProperties.map(
+                (properties, index) => `
             create_${index}: ${mutation}(data: {
-                    name: "${name}"
+                    ${Object.entries(properties).map(([key, value]) => {
+                        if (Array.isArray(value)) {
+                            return `${key}: [${value
+                                .map(v => `"${v}"`)
+                                .join(',')}]\n`;
+                        }
+
+                        if (typeof value === 'string') {
+                            return `${key}: "${value}"\n`;
+                        }
+
+                        return `${key}: ${value}\n`;
+                    })}
                 }) {
                     _id
                 }
@@ -166,11 +179,11 @@ export {
     getFaunaCases,
     getFaunaSurfaces,
     createFaunaProducts,
-    bulkInsertNamed,
+    bulkInsert,
     FaunaDevice,
     FaunaCase,
     FaunaSurface,
     FaunaProductVariation,
     FaunaProduct,
-    BulkInsertNamedMutations,
+    BulkInsertMutations,
 };

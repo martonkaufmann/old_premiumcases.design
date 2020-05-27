@@ -10,10 +10,10 @@ import {
     getFaunaCases,
     getFaunaSurfaces,
     createFaunaProducts,
-    bulkInsertNamed,
+    bulkInsert,
     FaunaProductVariation,
     FaunaProduct,
-    BulkInsertNamedMutations,
+    BulkInsertMutations,
 } from './_migrate/fauna';
 import {
     setupCloudinary,
@@ -27,28 +27,72 @@ export default async (request: NowRequest, response: NowResponse) => {
 
     // Seed data to database
     await Promise.all([
-        bulkInsertNamed(BulkInsertNamedMutations.device, [
-            'iPhone 7',
-            'iPhone 7 Plus',
-            'iPhone 8',
-            'iPhone 8 Plus',
-            'iPhone X',
-            'iPhone XR',
-            'iPhone XS',
-            'iPhone XS MAX',
-            'iPhone 11',
-            'iPhone 11 Pro',
-            'iPhone 11 Pro Max',
+        bulkInsert(BulkInsertMutations.device, [
+            { name: 'iPhone 7' },
+            { name: 'iPhone 7 Plus' },
+            { name: 'iPhone 8' },
+            { name: 'iPhone 8 Plus' },
+            { name: 'iPhone X' },
+            { name: 'iPhone XR' },
+            { name: 'iPhone XS' },
+            { name: 'iPhone XS MAX' },
+            { name: 'iPhone 11' },
+            { name: 'iPhone 11 Pro' },
+            { name: 'iPhone 11 Pro Max' },
         ]),
-        bulkInsertNamed(BulkInsertNamedMutations.surface, [
-            'Glossy',
-            'Matte',
-            'Base',
+        bulkInsert(BulkInsertMutations.surface, [
+            { name: 'Glossy' },
+            { name: 'Matte' },
+            { name: 'Base' },
         ]),
-        bulkInsertNamed(BulkInsertNamedMutations.case, [
-            'Flexi',
-            'Snap',
-            'Tough',
+        bulkInsert(BulkInsertMutations.case, [
+            {
+                name: 'Flexi',
+                description:
+                    'The Flexi Case is designed with modern form and function in mind. The Flexi Case has an extraordinary Clear TPU shell delivering frosty transparent impact resistance while allowing the allure of the smartphone to shine through.',
+                attributes: [
+                    'Slim form and lightweight',
+                    'Totally flexible, resistant to tear',
+                    'Slimline and low profile, fitting tightly',
+                    'Precise cut outs for connectivity',
+                    'Supports wireless charging',
+                ],
+            },
+            {
+                name: 'Snap',
+                description:
+                    'The Snap Case makes it easy to slide your phone into a pocket or clutch. Its slim form factor and lightweight design give it a modern look. It has minimal impact on overall device size.',
+                attributes: [
+                    'Extremely strong plastic',
+                    'Slim form and lightweight',
+                    'Photographic print quality',
+                    'Clear, open ports for connectivity',
+                    'Supports wireless charging',
+                ],
+            },
+            {
+                name: 'Tough',
+                description:
+                    'Accessorize your phone without sacrificing security with customized Tough Cases! Tough Cases use Impact resistant Polycarbonate outer shell and Inner TPU liner for extra impact resistance. Keep your phone secure & stylish whether headed to the office or wrapped in pastels for a spring time soirée.',
+                attributes: [
+                    'Dual layer case for extra durability and protection',
+                    'Impact resistant Polycarbonate outer shell',
+                    'Photographic print quality',
+                    'Clear, open ports for connectivity',
+                ],
+            },
+            {
+                name: 'Case Mate Slim',
+                description:
+                    'These premium, super slim cases fit flawlessly, in the meantime being the strongest, lightest and most flexible cases on the market. The surface is perfect for high quality prints, making it a must-have style accessory.',
+                attributes: [
+                    'Extremely strong plastic',
+                    'Super slim',
+                    'Impact resistant, durable',
+                    'Rubber inside plate',
+                    'Supports wireless charging',
+                ],
+            },
         ]),
     ]);
 
