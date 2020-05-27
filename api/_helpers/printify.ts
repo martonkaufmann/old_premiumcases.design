@@ -40,8 +40,16 @@ const getPrintifyProducts = async (): Promise<PrintifyProductsResponse[]> => {
     return <PrintifyProductsResponse[]>response.data.data;
 };
 
-const setProductToPublished = async (): Promise<any> => {
-    // /v1/shops/{shop_id}/products/{product_id}/publishing_succeeded.json
+const setProductToPublished = async (productId: string): Promise<void> => {
+    await axios.post(
+        `https://api.printify.com/v1/shops/${process.env.PRINTIFY_SHOP_ID}/products/${productId}/publishing_succeeded.json`,
+        {},
+        {
+            headers: {
+                Authorization: `Bearer ${process.env.PRINTIFY_TOKEN}`,
+            },
+        },
+    );
 };
 
-export { getPrintifyProducts, PrintifyProductMetadata };
+export { getPrintifyProducts, setProductToPublished, PrintifyProductMetadata };
