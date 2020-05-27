@@ -40,4 +40,8 @@ const getPrintifyProducts = async (): Promise<PrintifyProductsResponse[]> => {
     return <PrintifyProductsResponse[]>response.data.data;
 };
 
+const setProductToPublished = async (): Promise<any> => {
+    // /v1/shops/{shop_id}/products/{product_id}/publishing_succeeded.json
+};
+
 export { getPrintifyProducts, PrintifyProductMetadata };

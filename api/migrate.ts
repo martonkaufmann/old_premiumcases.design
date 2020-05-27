@@ -4,7 +4,7 @@ import { NowRequest, NowResponse } from '@now/node';
 import {
     getPrintifyProducts,
     PrintifyProductMetadata,
-} from './_migrate/printify';
+} from './_helpers/printify';
 import {
     getFaunaDevices,
     getFaunaCases,
@@ -81,18 +81,18 @@ export default async (request: NowRequest, response: NowResponse) => {
                     'Clear, open ports for connectivity',
                 ],
             },
-            {
-                name: 'Case Mate Slim',
-                description:
-                    'These premium, super slim cases fit flawlessly, in the meantime being the strongest, lightest and most flexible cases on the market. The surface is perfect for high quality prints, making it a must-have style accessory.',
-                attributes: [
-                    'Extremely strong plastic',
-                    'Super slim',
-                    'Impact resistant, durable',
-                    'Rubber inside plate',
-                    'Supports wireless charging',
-                ],
-            },
+            // {
+            //     name: 'Case Mate Slim',
+            //     description:
+            //         'These premium, super slim cases fit flawlessly, in the meantime being the strongest, lightest and most flexible cases on the market. The surface is perfect for high quality prints, making it a must-have style accessory.',
+            //     attributes: [
+            //         'Extremely strong plastic',
+            //         'Super slim',
+            //         'Impact resistant, durable',
+            //         'Rubber inside plate',
+            //         'Supports wireless charging',
+            //     ],
+            // },
         ]),
     ]);
 
@@ -126,13 +126,10 @@ export default async (request: NowRequest, response: NowResponse) => {
 
             const variationPrice = variant.price;
             const variationId = variant.id;
-            const variationImageUrl = printifyProduct.images
-                .find(
-                    image =>
-                        image.variant_ids.includes(variationId) &&
-                        image.is_default,
-                )
-                .src.replace('-api', '');
+            const variationImageUrl = printifyProduct.images.find(
+                image =>
+                    image.variant_ids.includes(variationId) && image.is_default,
+            ).src;
 
             let [deviceName, variationName] = variant.title.split('/');
             deviceName = deviceName.trim();
