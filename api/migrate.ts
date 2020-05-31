@@ -19,7 +19,6 @@ import {
     setupCloudinary,
     uploadImageFromUrlToCloudinary,
 } from './_helpers/cloudinary';
-import cloudinary from 'cloudinary';
 
 export default async (request: NowRequest, response: NowResponse) => {
     dotenv.config();
@@ -107,7 +106,6 @@ export default async (request: NowRequest, response: NowResponse) => {
         getFaunaSurfaces(),
     ]);
     const products: FaunaProduct[] = [];
-    const imageUploads: Promise<cloudinary.UploadApiResponse>[] = [];
 
     for (const printifyProduct of printifyProducts) {
         const variations: FaunaProductVariation[] = [];
@@ -141,11 +139,9 @@ export default async (request: NowRequest, response: NowResponse) => {
                 .createHash('md5')
                 .update(variationImageUrl)
                 .digest('hex');
-            imageUploads.push(
-                uploadImageFromUrlToCloudinary(
-                    variationImageUrl,
-                    variantionImagePublicId,
-                ),
+            await uploadImageFromUrlToCloudinary(
+                variationImageUrl,
+                variantionImagePublicId,
             );
 
             variations.push({
@@ -170,11 +166,9 @@ export default async (request: NowRequest, response: NowResponse) => {
                 .createHash('md5')
                 .update(productImageUrl)
                 .digest('hex');
-            imageUploads.push(
-                uploadImageFromUrlToCloudinary(
-                    productImageUrl,
-                    productImagePublicId,
-                ),
+            await uploadImageFromUrlToCloudinary(
+                productImageUrl,
+                productImagePublicId,
             );
 
             products.push({
@@ -222,7 +216,6 @@ export default async (request: NowRequest, response: NowResponse) => {
     );
 
     await createFaunaProducts(products);
-    await Promise.all(imageUploads);
 
     response.status(200).send(products);
 };

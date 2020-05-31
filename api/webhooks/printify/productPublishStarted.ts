@@ -1,29 +1,27 @@
 import { NowRequest, NowResponse } from '@now/node';
-import {setProductToPublished} from '../../_helpers/printify'
+import { setProductToPublished } from '../../_helpers/printify';
 
 interface RequestResourceData {
-    shop_id: number
-    action: string
+    shop_id: number;
+    action: string;
 }
 
 interface RequestResource {
-    id: string
-    type: string
-    data: RequestResourceData
+    id: string;
+    type: string;
+    data: RequestResourceData;
 }
 
 interface Request {
     id: string;
     type: string;
-    resource: RequestResource
+    resource: RequestResource;
 }
 
 export default async (request: NowRequest, response: NowResponse) => {
-    console.log(JSON.stringify(request.body));
+    const printifyRequest: Request = request.body;
 
-    const printifyRequest: Request = request.body
-
-    await setProductToPublished(printifyRequest.resource.id)
+    await setProductToPublished(printifyRequest.resource.id);
 
     response.status(200).send({
         id: printifyRequest.id,
